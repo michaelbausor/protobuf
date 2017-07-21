@@ -34,14 +34,15 @@ namespace Google\Protobuf\Internal;
 
 class FileDescriptor
 {
-
     private $package;
     private $message_type = [];
     private $enum_type = [];
 
-    public function setPackage($package)
+    public function __construct($package, $message_type = [], $enum_type = [])
     {
         $this->package = $package;
+        $this->message_type = $message_type;
+        $this->enum_type = $enum_type;
     }
 
     public function getPackage()
@@ -54,36 +55,26 @@ class FileDescriptor
         return $this->message_type;
     }
 
-    public function addMessageType($desc)
-    {
-        $this->message_type[] = $desc;
-    }
-
     public function getEnumType()
     {
         return $this->enum_type;
     }
 
-    public function addEnumType($desc)
-    {
-        $this->enum_type[]= $desc;
-    }
-
     public static function buildFromProto($proto)
     {
-        $file = new FileDescriptor();
-        $file->setPackage($proto->getPackage());
+        $message_type = [];
         foreach ($proto->getMessageType() as $message_proto) {
-            $file->addMessageType(Descriptor::buildFromProto(
-                $message_proto, $proto, ""));
+            $message_type[] = Descriptor::buildFromProto(
+                $message_proto, $proto, "");
         }
+        $enum_type = [];
         foreach ($proto->getEnumType() as $enum_proto) {
-            $file->addEnumType(
+            $enum_type[] =
                 EnumDescriptor::buildFromProto(
                     $enum_proto,
                     $proto,
-                    ""));
+                    "");
         }
-        return $file;
+        return new FileDescriptor($proto->getPackage(), $message_type, $enum_type);
     }
 }

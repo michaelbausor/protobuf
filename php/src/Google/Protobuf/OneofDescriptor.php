@@ -30,26 +30,23 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-namespace Google\Protobuf\Internal;
+namespace Google\Protobuf;
 
-class EnumValueDescriptor
+interface OneofDescriptor
 {
-    private $name;
-    private $number;
+    /**
+     * @return string The name of the oneof
+     */
+    public function getName();
 
-    public function __construct($name, $number)
-    {
-        $this->name = $name;
-        $this->number = $number;
-    }
+    /**
+     * @param int $index Must be >= 0 and < getFieldCount()
+     * @return FieldDescriptor
+     */
+    public function getField($index);
 
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    public function getNumber()
-    {
-        return $this->number;
-    }
+    /**
+     * @return int Number of fields in the oneof
+     */
+    public function getFieldCount();
 }

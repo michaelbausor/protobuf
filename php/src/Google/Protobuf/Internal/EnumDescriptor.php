@@ -4,15 +4,15 @@ namespace Google\Protobuf\Internal;
 
 class EnumDescriptor
 {
-
-    private $klass;
     private $full_name;
-    private $value;
-    private $name_to_value;
+    private $klass;
+    private $values;
 
-    public function setFullName($full_name)
+    public function __construct($full_name, $klass, $values)
     {
         $this->full_name = $full_name;
+        $this->klass = $klass;
+        $this->values = $values;
     }
 
     public function getFullName()
@@ -20,36 +20,23 @@ class EnumDescriptor
         return $this->full_name;
     }
 
-    public function addValue($number, $value)
-    {
-        $this->value[$number] = $value;
-        $this->name_to_value[$value->getName()] = $value;
-    }
-
-    public function getValueByNumber($number)
-    {
-        return $this->value[$number];
-    }
-
-    public function getValueByName($name)
-    {
-        return $this->name_to_value[$name];
-    }
-
-    public function setClass($klass)
-    {
-        $this->klass = $klass;
-    }
-
     public function getClass()
     {
         return $this->klass;
     }
 
+    public function getValue($number)
+    {
+        return $this->values[$number];
+    }
+
+    public function getValueCount()
+    {
+        return count($this->values);
+    }
+
     public static function buildFromProto($proto, $file_proto, $containing)
     {
-        $desc = new EnumDescriptor();
-
         $enum_name_without_package  = "";
         $classname = "";
         $fullname = "";
@@ -60,13 +47,13 @@ class EnumDescriptor
             $enum_name_without_package,
             $classname,
             $fullname);
-        $desc->setFullName($fullname);
-        $desc->setClass($classname);
-        $values = $proto->getValue();
-        foreach ($values as $value) {
-            $desc->addValue($value->getNumber(), $value);
+        $value_arr = [];
+        foreach ($proto->getValue() as $proto_value) {
+            $name = $proto_value->getName();
+            $number = $proto_value->getNumber();
+            $value_arr[$number] = new EnumValueDescriptor($name, $number);
         }
 
-        return $desc;
+        return new EnumDescriptor($fullname, $classname, $value_arr);
     }
 }

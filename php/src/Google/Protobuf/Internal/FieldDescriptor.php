@@ -32,35 +32,44 @@
 
 namespace Google\Protobuf\Internal;
 
-class FieldDescriptor
+class FieldDescriptor implements \Google\Protobuf\FieldDescriptor
 {
-
     private $name;
-    private $json_name;
-    private $setter;
-    private $getter;
     private $number;
     private $label;
     private $type;
     private $message_type;
     private $enum_type;
+    private $oneof_index;
+    private $setter;
+    private $getter;
+    private $json_name;
     private $packed;
-    private $is_map;
-    private $oneof_index = -1;
 
-    public function setOneofIndex($index)
-    {
-        $this->oneof_index = $index;
-    }
-
-    public function getOneofIndex()
-    {
-        return $this->oneof_index;
-    }
-
-    public function setName($name)
+    public function __construct(
+        $name,
+        $number,
+        $label,
+        $type,
+        $message_type,
+        $enum_type,
+        $oneof_index,
+        $setter,
+        $getter,
+        $json_name,
+        $packed)
     {
         $this->name = $name;
+        $this->number = $number;
+        $this->label = $label;
+        $this->type = $type;
+        $this->message_type = $message_type;
+        $this->enum_type = $enum_type;
+        $this->oneof_index = $oneof_index;
+        $this->setter = $setter;
+        $this->getter = $getter;
+        $this->json_name = $json_name;
+        $this->packed = $packed;
     }
 
     public function getName()
@@ -68,49 +77,9 @@ class FieldDescriptor
         return $this->name;
     }
 
-    public function setJsonName($json_name)
-    {
-        $this->json_name = $json_name;
-    }
-
-    public function getJsonName()
-    {
-        return $this->json_name;
-    }
-
-    public function setSetter($setter)
-    {
-        $this->setter = $setter;
-    }
-
-    public function getSetter()
-    {
-        return $this->setter;
-    }
-
-    public function setGetter($getter)
-    {
-        $this->getter = $getter;
-    }
-
-    public function getGetter()
-    {
-        return $this->getter;
-    }
-
-    public function setNumber($number)
-    {
-        $this->number = $number;
-    }
-
     public function getNumber()
     {
         return $this->number;
-    }
-
-    public function setLabel($label)
-    {
-        $this->label = $label;
     }
 
     public function getLabel()
@@ -118,24 +87,9 @@ class FieldDescriptor
         return $this->label;
     }
 
-    public function isRepeated()
-    {
-        return $this->label === GPBLabel::REPEATED;
-    }
-
-    public function setType($type)
-    {
-        $this->type = $type;
-    }
-
     public function getType()
     {
         return $this->type;
-    }
-
-    public function setMessageType($message_type)
-    {
-        $this->message_type = $message_type;
     }
 
     public function getMessageType()
@@ -143,19 +97,41 @@ class FieldDescriptor
         return $this->message_type;
     }
 
-    public function setEnumType($enum_type)
-    {
-        $this->enum_type = $enum_type;
-    }
-
     public function getEnumType()
     {
         return $this->enum_type;
     }
 
-    public function setPacked($packed)
+    public function isMap()
     {
-        $this->packed = $packed;
+        return $this->getType() == GPBType::MESSAGE &&
+               !is_null($this->getMessageType()->getOptions()) &&
+               $this->getMessageType()->getOptions()->getMapEntry();
+    }
+
+    public function isRepeated()
+    {
+        return $this->label === GPBLabel::REPEATED;
+    }
+
+    public function getOneofIndex()
+    {
+        return $this->oneof_index;
+    }
+
+    public function getSetter()
+    {
+        return $this->setter;
+    }
+
+    public function getGetter()
+    {
+        return $this->getter;
+    }
+
+    public function getJsonName()
+    {
+        return $this->json_name;
     }
 
     public function getPacked()
@@ -168,13 +144,6 @@ class FieldDescriptor
         return $this->isRepeated() && self::isTypePackable($this->type);
     }
 
-    public function isMap()
-    {
-        return $this->getType() == GPBType::MESSAGE &&
-               !is_null($this->getMessageType()->getOptions()) &&
-               $this->getMessageType()->getOptions()->getMapEntry();
-    }
-
     private static function isTypePackable($field_type)
     {
         return ($field_type !== GPBType::STRING  &&
@@ -183,32 +152,40 @@ class FieldDescriptor
             $field_type !== GPBType::BYTES);
     }
 
-    public static function getFieldDescriptor($proto)
+    public function crossLink($pool)
     {
-        $type_name = null;
+        switch ($this->type) {
+            case GPBType::MESSAGE:
+                $this->message_type = $pool->getDescriptorByProtoName($this->message_type);
+                break;
+            case GPBType::ENUM:
+                $this->enum_type = $pool->getEnumDescriptorByProtoName($this->enum_type);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public static function buildFromProto($proto)
+    {
         $type = $proto->getType();
+        $message_type = null;
+        $enum_type = null;
+        // At this time, the message/enum type may have not been added to pool.
+        // So we use the type name as place holder and will replace it with the
+        // actual descriptor in cross building.
         switch ($type) {
             case GPBType::MESSAGE:
-            case GPBType::GROUP:
+                $message_type = $proto->getTypeName();
             case GPBType::ENUM:
-                $type_name = $proto->getTypeName();
+                $enum_type = $proto->getTypeName();
                 break;
             default:
                 break;
         }
 
         $oneof_index = $proto->hasOneofIndex() ? $proto->getOneofIndex() : -1;
-        $packed = false;
-        $options = $proto->getOptions();
-        if ($options !== null) {
-            $packed = $options->getPacked();
-        }
 
-        $field = new FieldDescriptor();
-        $field->setName($proto->getName());
-
-        $json_name = $proto->hasJsonName() ? $proto->getJsonName() :
-            lcfirst(implode('', array_map('ucwords', explode('_', $proto->getName()))));
         if ($proto->hasJsonName()) {
             $json_name = $proto->getJsonName();
         } else {
@@ -218,36 +195,29 @@ class FieldDescriptor
                 $json_name = lcfirst($json_name);
             }
         }
-        $field->setJsonName($json_name);
 
         $camel_name = implode('', array_map('ucwords', explode('_', $proto->getName())));
-        $field->setGetter('get' . $camel_name);
-        $field->setSetter('set' . $camel_name);
-        $field->setType($proto->getType());
-        $field->setNumber($proto->getNumber());
-        $field->setLabel($proto->getLabel());
-        $field->setPacked($packed);
-        $field->setOneofIndex($oneof_index);
+        $setter = 'set' . $camel_name;
+        $getter = 'get' . $camel_name;
 
-        // At this time, the message/enum type may have not been added to pool.
-        // So we use the type name as place holder and will replace it with the
-        // actual descriptor in cross building.
-        switch ($type) {
-            case GPBType::MESSAGE:
-                $field->setMessageType($type_name);
-                break;
-            case GPBType::ENUM:
-                $field->setEnumType($type_name);
-                break;
-            default:
-                break;
+        $packed = false;
+        $options = $proto->getOptions();
+        if ($options !== null) {
+            $packed = $options->getPacked();
         }
 
-        return $field;
-    }
-
-    public static function buildFromProto($proto)
-    {
-        return FieldDescriptor::getFieldDescriptor($proto);
+        return new FieldDescriptor(
+            $proto->getName(),
+            $proto->getNumber(),
+            $proto->getLabel(),
+            $type,
+            $message_type,
+            $enum_type,
+            $oneof_index,
+            $setter,
+            $getter,
+            $json_name,
+            $packed
+        );
     }
 }

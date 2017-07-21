@@ -68,7 +68,9 @@ class Message
         // specific descriptor from the descriptor pool.
         if (get_class($this) === 'Google\Protobuf\Internal\MapEntry') {
             $this->desc = $desc;
-            foreach ($desc->getField() as $field) {
+            $field_count = $this->desc->getFieldCount();
+            for ($i = 0; $i < $field_count; $i++) {
+                $field = $this->desc->getField($i);
                 $setter = $field->getSetter();
                 $this->$setter($this->defaultValue($field));
             }
@@ -76,7 +78,9 @@ class Message
         }
         $pool = DescriptorPool::getGeneratedPool();
         $this->desc = $pool->getDescriptorByClassName(get_class($this));
-        foreach ($this->desc->getField() as $field) {
+        $field_count = $this->desc->getFieldCount();
+        for ($i = 0; $i < $field_count; $i++) {
+            $field = $this->desc->getField($i);
             $setter = $field->getSetter();
             if ($field->isMap()) {
                 $message_type = $field->getMessageType();
@@ -458,7 +462,9 @@ class Message
      */
     public function clear()
     {
-        foreach ($this->desc->getField() as $field) {
+        $field_count = $this->desc->getFieldCount();
+        for ($i = 0; $i < $field_count; $i++) {
+            $field = $this->desc->getField($i);
             $setter = $field->getSetter();
             if ($field->isMap()) {
                 $message_type = $field->getMessageType();
@@ -576,58 +582,60 @@ class Message
      */
     public function mergeFrom($msg)
     {
-      if (get_class($this) !== get_class($msg)) {
-          user_error("Cannot merge messages with different class.");
-          return;
-      }
+        if (get_class($this) !== get_class($msg)) {
+            user_error("Cannot merge messages with different class.");
+            return;
+        }
 
-      foreach ($this->desc->getField() as $field) {
-          $setter = $field->getSetter();
-          $getter = $field->getGetter();
-          if ($field->isMap()) {
-              if (count($msg->$getter()) != 0) {
-                  $value_field = $field->getMessageType()->getFieldByNumber(2);
-                  foreach ($msg->$getter() as $key => $value) {
-                      if ($value_field->getType() == GPBType::MESSAGE) {
-                          $klass = $value_field->getMessageType()->getClass();
-                          $copy = new $klass;
-                          $copy->mergeFrom($value);
+        $field_count = $this->desc->getFieldCount();
+        for ($i = 0; $i < $field_count; $i++) {
+            $field = $this->desc->getField($i);
+            $setter = $field->getSetter();
+            $getter = $field->getGetter();
+            if ($field->isMap()) {
+                if (count($msg->$getter()) != 0) {
+                    $value_field = $field->getMessageType()->getFieldByNumber(2);
+                    foreach ($msg->$getter() as $key => $value) {
+                        if ($value_field->getType() == GPBType::MESSAGE) {
+                            $klass = $value_field->getMessageType()->getClass();
+                            $copy = new $klass;
+                            $copy->mergeFrom($value);
 
-                          $this->kvUpdateHelper($field, $key, $copy);
-                      } else {
-                          $this->kvUpdateHelper($field, $key, $value);
-                      }
-                  }
-              }
-          } else if ($field->getLabel() === GPBLabel::REPEATED) {
-              if (count($msg->$getter()) != 0) {
-                  foreach ($msg->$getter() as $tmp) {
-                      if ($field->getType() == GPBType::MESSAGE) {
-                          $klass = $field->getMessageType()->getClass();
-                          $copy = new $klass;
-                          $copy->mergeFrom($tmp);
-                          $this->appendHelper($field, $copy);
-                      } else {
-                          $this->appendHelper($field, $tmp);
-                      }
-                  }
-              }
-          } else if ($field->getLabel() === GPBLabel::OPTIONAL) {
-              if($msg->$getter() !== $this->defaultValue($field)) {
-                  $tmp = $msg->$getter();
-                  if ($field->getType() == GPBType::MESSAGE) {
-                      if (is_null($this->$getter())) {
-                          $klass = $field->getMessageType()->getClass();
-                          $new_msg = new $klass;
-                          $this->$setter($new_msg);
-                      }
-                      $this->$getter()->mergeFrom($tmp);
-                  } else {
-                      $this->$setter($tmp);
-                  }
-              }
-          }
-      }
+                            $this->kvUpdateHelper($field, $key, $copy);
+                        } else {
+                            $this->kvUpdateHelper($field, $key, $value);
+                        }
+                    }
+                }
+            } else if ($field->getLabel() === GPBLabel::REPEATED) {
+                if (count($msg->$getter()) != 0) {
+                    foreach ($msg->$getter() as $tmp) {
+                        if ($field->getType() == GPBType::MESSAGE) {
+                            $klass = $field->getMessageType()->getClass();
+                            $copy = new $klass;
+                            $copy->mergeFrom($tmp);
+                            $this->appendHelper($field, $copy);
+                        } else {
+                            $this->appendHelper($field, $tmp);
+                        }
+                    }
+                }
+            } else if ($field->getLabel() === GPBLabel::OPTIONAL) {
+                if($msg->$getter() !== $this->defaultValue($field)) {
+                    $tmp = $msg->$getter();
+                    if ($field->getType() == GPBType::MESSAGE) {
+                        if (is_null($this->$getter())) {
+                            $klass = $field->getMessageType()->getClass();
+                            $new_msg = new $klass;
+                            $this->$setter($new_msg);
+                        }
+                        $this->$getter()->mergeFrom($tmp);
+                    } else {
+                        $this->$setter($tmp);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -1023,8 +1031,9 @@ class Message
      */
     public function serializeToStream(&$output)
     {
-        $fields = $this->desc->getField();
-        foreach ($fields as $field) {
+        $field_count = $this->desc->getFieldCount();
+        for ($i = 0; $i < $field_count; $i++) {
+            $field = $this->desc->getField($i);
             if (!$this->serializeFieldToStream($output, $field)) {
                 return false;
             }
@@ -1038,9 +1047,10 @@ class Message
     public function serializeToJsonStream(&$output)
     {
         $output->writeRaw("{", 1);
-        $fields = $this->desc->getField();
         $first = true;
-        foreach ($fields as $field) {
+        $field_count = $this->desc->getFieldCount();
+        for ($i = 0; $i < $field_count; $i++) {
+            $field = $this->desc->getField($i);
             if ($this->existField($field)) {
                 if ($first) {
                     $first = false;
@@ -1403,8 +1413,9 @@ class Message
     {
         $size = 0;
 
-        $fields = $this->desc->getField();
-        foreach ($fields as $field) {
+        $field_count = $this->desc->getFieldCount();
+        for ($i = 0; $i < $field_count; $i++) {
+            $field = $this->desc->getField($i);
             $size += $this->fieldByteSize($field);
         }
         return $size;
@@ -1446,9 +1457,10 @@ class Message
         // Size for "{}".
         $size += 2;
 
-        $fields = $this->desc->getField();
         $count = 0;
-        foreach ($fields as $field) {
+        $field_count = $this->desc->getFieldCount();
+        for ($i = 0; $i < $field_count; $i++) {
+            $field = $this->desc->getField($i);
             $field_size = $this->fieldJsonByteSize($field);
             $size += $field_size;
             if ($field_size != 0) {

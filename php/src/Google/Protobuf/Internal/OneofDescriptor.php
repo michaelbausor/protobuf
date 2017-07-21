@@ -38,9 +38,10 @@ class OneofDescriptor
     private $name;
     private $fields;
 
-    public function setName($name)
+    public function __construct($name, $fields)
     {
         $this->name = $name;
+        $this->fields = $fields;
     }
 
     public function getName()
@@ -48,20 +49,18 @@ class OneofDescriptor
         return $this->name;
     }
 
-    public function addField(&$field)
+    public function getField($index)
     {
-        $this->fields[] = $field;
+        return $this->fields[$index];
     }
 
-    public function getFields()
+    public function getFieldCount()
     {
-        return $this->fields;
+        return count($this->fields);
     }
 
     public static function buildFromProto($oneof_proto)
     {
-        $oneof = new OneofDescriptor();
-        $oneof->setName($oneof_proto->getName());
-        return $oneof;
+        return new OneofDescriptor($oneof_proto->getName(), []);
     }
 }

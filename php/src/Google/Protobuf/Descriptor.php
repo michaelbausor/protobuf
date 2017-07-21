@@ -30,26 +30,61 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-namespace Google\Protobuf\Internal;
+namespace Google\Protobuf;
 
-class EnumValueDescriptor
+interface Descriptor
 {
-    private $name;
-    private $number;
+    /**
+     * @return string Full protobuf message name
+     */
+    public function getFullName();
 
-    public function __construct($name, $number)
-    {
-        $this->name = $name;
-        $this->number = $number;
-    }
+    /**
+     * @return string PHP class name
+     */
+    public function getClass();
 
-    public function getName()
-    {
-        return $this->name;
-    }
+    /**
+     * @param int $index Must be >= 0 and < getFieldCount()
+     * @return FieldDescriptor
+     */
+    public function getField($index);
 
-    public function getNumber()
-    {
-        return $this->number;
-    }
+    /**
+     * @return int Number of fields in message
+     */
+    public function getFieldCount();
+
+    /**
+     * @param int $index Must be >= 0 and < getNestedTypeCount()
+     * @return Descriptor
+     */
+    public function getNestedType($index);
+
+    /**
+     * @return int Number of nested types in message
+     */
+    public function getNestedTypeCount();
+
+    /**
+     * @param int $index Must be >= 0 and < getEnumTypeCount()
+     * @return EnumDescriptor
+     */
+    public function getEnumType($index);
+
+    /**
+     * @return int Number of enum types in message
+     */
+    public function getEnumTypeCount();
+
+    /**
+     * @param int $index Must be >= 0 and < getOneofDeclCount()
+     * @return OneofDescriptor
+     */
+    public function getOneofDecl($index);
+
+    /**
+     * @return int Number of oneofs in message
+     */
+    public function getOneofDeclCount();
 }

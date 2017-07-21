@@ -30,34 +30,17 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-namespace Google\Protobuf\Internal;
+namespace Google\Protobuf;
 
-use Google\Protobuf\Internal\EnumDescriptor;
-use Google\Protobuf\Internal\EnumValueDescriptor;
-
-class EnumBuilderContext
+interface EnumValueDescriptor
 {
+    /**
+     * @return string
+     */
+    public function getName();
 
-    private $descriptor;
-    private $pool;
-
-    public function __construct($full_name, $klass, $pool)
-    {
-        $this->descriptor = new EnumDescriptor();
-        $this->descriptor->setFullName($full_name);
-        $this->descriptor->setClass($klass);
-        $this->pool = $pool;
-    }
-
-    public function value($name, $number)
-    {
-        $value = new EnumValueDescriptor();
-        $this->descriptor->addValue($number, $value);
-        return $this;
-    }
-
-    public function finalizeToPool()
-    {
-        $this->pool->addEnumDescriptor($this->descriptor);
-    }
+    /**
+     * @return int
+     */
+    public function getNumber();
 }

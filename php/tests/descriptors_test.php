@@ -76,7 +76,11 @@ class DescriptorsTest extends TestBase
 
     public function testEnumDescriptor()
     {
+        // WARNINIG - we need to do this so that TestDescriptorsEnum is registered!!?
+        new TestDescriptorsMessage();
+
         $pool = DescriptorPool::getGeneratedPool();
+
         $enumDesc = $pool->getEnumDescriptorByClassName(get_class(new TestDescriptorsEnum()));
 
         $enumValueDesc = $enumDesc->getValue(0);

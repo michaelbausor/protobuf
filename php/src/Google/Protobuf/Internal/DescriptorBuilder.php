@@ -32,89 +32,121 @@
 
 namespace Google\Protobuf\Internal;
 
-use Google\Protobuf\Internal\GPBLabel;
-use Google\Protobuf\Internal\GPBType;
-use Google\Protobuf\Internal\Descriptor;
-use Google\Protobuf\Internal\FieldDescriptor;
-
-class MessageBuilderContext
+class DescriptorBuilder
 {
+    private $full_name;
+    private $klass;
+    private $fields = [];
+    private $nested_types = [];
+    private $enum_types = [];
+    private $oneof_decls = [];
 
-    private $descriptor;
-    private $pool;
-
-    public function __construct($full_name, $klass, $pool)
+    public function __construct($full_name, $klass)
     {
-        $this->descriptor = new Descriptor();
-        $this->descriptor->setFullName($full_name);
-        $this->descriptor->setClass($klass);
-        $this->pool = $pool;
+        $this->full_name = $full_name;
+        $this->klass = $klass;
+    }
+
+    public function getFullName()
+    {
+        return $this->full_name;
+    }
+
+    public function getClass()
+    {
+        return $this->klass;
+    }
+
+    public function getFields()
+    {
+        return $this->fields;
+    }
+
+    public function getNestedTypes()
+    {
+        return $this->nested_types;
+    }
+
+    public function getEnumTypes()
+    {
+        return $this->enum_types;
     }
 
     private function getFieldDescriptor($name, $label, $type,
                                       $number, $type_name = null)
     {
-        $field = new FieldDescriptor();
-        $field->setName($name);
-        $camel_name = implode('', array_map('ucwords', explode('_', $name)));
-        $field->setGetter('get' . $camel_name);
-        $field->setSetter('set' . $camel_name);
-        $field->setType($type);
-        $field->setNumber($number);
-        $field->setLabel($label);
+        $message_type = null;
+        $enum_type = null;
 
         // At this time, the message/enum type may have not been added to pool.
         // So we use the type name as place holder and will replace it with the
         // actual descriptor in cross building.
         switch ($type) {
         case GPBType::MESSAGE:
-          $field->setMessageType($type_name);
-          break;
+            $message_type = $type_name;
+            break;
         case GPBType::ENUM:
-          $field->setEnumType($type_name);
-          break;
+            $enum_type = $type_name;
+            break;
         default:
-          break;
+            break;
         }
 
-        return $field;
+        $camel_name = implode('', array_map('ucwords', explode('_', $name)));
+        $setter = 'set' . $camel_name;
+        $getter = 'get' . $camel_name;
+
+        return new FieldDescriptor(
+            $name,
+            $number,
+            $label,
+            $type,
+            $message_type,
+            $enum_type,
+            -1,
+            $setter,
+            $getter,
+            null,
+            false
+        );
     }
 
     public function optional($name, $type, $number, $type_name = null)
     {
-        $this->descriptor->addField($this->getFieldDescriptor(
-            $name,
-            GPBLabel::OPTIONAL,
-            $type,
-            $number,
-            $type_name));
-        return $this;
+        return $this->addField($name, GPBLabel::OPTIONAL, $type, $number, $type_name);
     }
 
     public function repeated($name, $type, $number, $type_name = null)
     {
-        $this->descriptor->addField($this->getFieldDescriptor(
-            $name,
-            GPBLabel::REPEATED,
-            $type,
-            $number,
-            $type_name));
-        return $this;
+        return $this->addField($name, GPBLabel::REPEATED, $type, $number, $type_name);
     }
 
     public function required($name, $type, $number, $type_name = null)
     {
-        $this->descriptor->addField($this->getFieldDescriptor(
+        return $this->addField($name, GPBLabel::REQUIRED, $type, $number, $type_name);
+    }
+
+    private function addField($name, $label, $type, $number, $type_name = null)
+    {
+        $this->fields[] = $this->getFieldDescriptor(
             $name,
-            GPBLabel::REQUIRED,
+            $label,
             $type,
             $number,
-            $type_name));
+            $type_name);
         return $this;
     }
 
-    public function finalizeToPool()
+    public function build()
     {
-        $this->pool->addDescriptor($this->descriptor);
+        return new Descriptor(
+            $this->full_name,
+            $this->klass,
+            $this->fields,
+            $this->nested_types,
+            $this->enum_types,
+            $this->oneof_decls,
+            null
+        );
     }
 }

@@ -32,12 +32,6 @@
 
 namespace Google\Protobuf\Internal;
 
-use Google\Protobuf\Internal\Descriptor;
-use Google\Protobuf\Internal\FileDescriptor;
-use Google\Protobuf\Internal\FileDescriptorSet;
-use Google\Protobuf\Internal\MessageBuilderContext;
-use Google\Protobuf\Internal\EnumBuilderContext;
-
 class DescriptorPool
 {
     private static $pool;
@@ -60,58 +54,60 @@ class DescriptorPool
         $files = new FileDescriptorSet();
         $files->mergeFromString($data);
         $file = FileDescriptor::buildFromProto($files->getFile()[0]);
+        $this->internalAdd($file->getMessageType(), $file->getEnumType());
+    }
 
-        foreach ($file->getMessageType() as &$desc) {
+    public function internalAdd(&$messageTypes, &$enumTypes)
+    {
+        foreach ($messageTypes as &$desc) {
             $this->addDescriptor($desc);
         }
         unset($desc);
 
-        foreach ($file->getEnumType() as &$desc) {
+        foreach ($enumTypes as &$desc) {
             $this->addEnumDescriptor($desc);
         }
         unset($desc);
 
-        foreach ($file->getMessageType() as &$desc) {
-            $this->crossLink($desc);
+        foreach ($messageTypes as &$desc) {
+            $desc->crossLink($this);
         }
         unset($desc);
     }
 
-    public function addMessage($name, $klass)
-    {
-        return new MessageBuilderContext($name, $klass, $this);
-    }
-
-    public function addEnum($name, $klass)
-    {
-        return new EnumBuilderContext($name, $klass, $this);
-    }
-
-    public function addDescriptor($descriptor)
+    private function addDescriptor($descriptor)
     {
         $this->proto_to_class[$descriptor->getFullName()] =
             $descriptor->getClass();
         $this->class_to_desc[$descriptor->getClass()] = $descriptor;
-        foreach ($descriptor->getNestedType() as $nested_type) {
+        foreach ($descriptor->getNestedTypes() as $nested_type) {
             $this->addDescriptor($nested_type);
         }
-        foreach ($descriptor->getEnumType() as $enum_type) {
+        foreach ($descriptor->getEnumTypes() as $enum_type) {
             $this->addEnumDescriptor($enum_type);
         }
     }
 
-    public function addEnumDescriptor($descriptor)
+    private function addEnumDescriptor($descriptor)
     {
         $this->proto_to_class[$descriptor->getFullName()] =
             $descriptor->getClass();
         $this->class_to_enum_desc[$descriptor->getClass()] = $descriptor;
     }
 
+    /**
+     * @param string $klass PHP class name
+     * @return \Google\Protobuf\Descriptor
+     */
     public function getDescriptorByClassName($klass)
     {
         return $this->class_to_desc[$klass];
     }
 
+    /**
+     * @param string $klass PHP class name
+     * @return \Google\Protobuf\EnumValueDescriptor
+     */
     public function getEnumDescriptorByClassName($klass)
     {
         return $this->class_to_enum_desc[$klass];
@@ -127,39 +123,5 @@ class DescriptorPool
     {
         $klass = $this->proto_to_class[$proto];
         return $this->class_to_enum_desc[$klass];
-    }
-
-    private function crossLink(&$desc)
-    {
-        foreach ($desc->getField() as &$field) {
-            switch ($field->getType()) {
-                case GPBType::MESSAGE:
-                    $proto = $field->getMessageType();
-                    $field->setMessageType(
-                        $this->getDescriptorByProtoName($proto));
-                    break;
-                case GPBType::ENUM:
-                    $proto = $field->getEnumType();
-                    $field->setEnumType(
-                        $this->getEnumDescriptorByProtoName($proto));
-                    break;
-                default:
-                    break;
-            }
-        }
-        unset($field);
-
-        foreach ($desc->getNestedType() as &$nested_type) {
-            $this->crossLink($nested_type);
-        }
-        unset($nested_type);
-    }
-
-    public function finish()
-    {
-        foreach ($this->class_to_desc as $klass => &$desc) {
-            $this->crossLink($desc);
-        }
-        unset($desc);
     }
 }

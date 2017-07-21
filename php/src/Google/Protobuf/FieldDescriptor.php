@@ -30,26 +30,53 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-namespace Google\Protobuf\Internal;
+namespace Google\Protobuf;
 
-class EnumValueDescriptor
+use Google\Protobuf\Internal\GPBLabel;
+use Google\Protobuf\Internal\GPBType;
+use Google\Protobuf\Internal\GPBUtil;
+
+interface FieldDescriptor
 {
-    private $name;
-    private $number;
+    /**
+     * @return string Field name
+     */
+    public function getName();
 
-    public function __construct($name, $number)
-    {
-        $this->name = $name;
-        $this->number = $number;
-    }
+    /**
+     * @return int Protobuf field number
+     */
+    public function getNumber();
 
-    public function getName()
-    {
-        return $this->name;
-    }
+    /**
+     * @return GPBLabel
+     */
+    public function getLabel();
 
-    public function getNumber()
-    {
-        return $this->number;
-    }
+    /**
+     * @return GPBType
+     */
+    public function getType();
+
+    /**
+     * @return Descriptor Returns a descriptor for the field type if getType() == GBPType::Message, otherwise throws \Exception
+     * @throws \Exception
+     */
+    public function getMessageType();
+
+    /**
+     * @return EnumDescriptor Returns an enum descriptor for the field type if getType() == GBPType::Enum, otherwise throws \Exception
+     * @throws \Exception
+     */
+    public function getEnumType();
+
+    /**
+     * @return boolean
+     */
+    public function isMap();
+
+    /**
+     * @return int Returns the index of the oneof containing this field, or -1 if this field is part of a oneof
+     */
+    public function getOneofIndex();
 }

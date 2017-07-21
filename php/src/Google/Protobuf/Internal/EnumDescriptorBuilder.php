@@ -32,24 +32,66 @@
 
 namespace Google\Protobuf\Internal;
 
-class EnumValueDescriptor
+use Google\Protobuf\Internal\EnumDescriptor;
+use Google\Protobuf\Internal\EnumValueDescriptor;
+
+class EnumDescriptorBuilder
 {
-    private $name;
-    private $number;
+    private $full_name;
+    private $klass;
+    private $values = [];
 
-    public function __construct($name, $number)
+    public function __construct($full_name, $klass)
     {
-        $this->name = $name;
-        $this->number = $number;
+        $this->full_name = $full_name;
+        $this->klass = $klass;
     }
 
-    public function getName()
+    public function getFullName()
     {
-        return $this->name;
+        return $this->full_name;
     }
 
-    public function getNumber()
+    public function getClass()
     {
-        return $this->number;
+        return $this->klass;
+    }
+
+    public function getValues()
+    {
+        return $this->values;
+    }
+
+    public function value($name, $number)
+    {
+        $this->values[$number] = new EnumValueDescriptor($name, $number);
+        return $this;
+    }
+
+    public function build()
+    {
+        return new EnumDescriptor($this->full_name, $this->klass, $this->values);
+    }
+
+    public static function buildFromProto($proto, $file_proto, $containing)
+    {
+        $enum_name_without_package  = "";
+        $classname = "";
+        $fullname = "";
+        GPBUtil::getFullClassName(
+            $proto,
+            $containing,
+            $file_proto,
+            $enum_name_without_package,
+            $classname,
+            $fullname);
+        $value_arr = [];
+        foreach ($proto->getValue() as $proto_value) {
+            $name = $proto_value->getName();
+            $number = $proto_value->getNumber();
+            $value_arr[$number] = new EnumValueDescriptor($name, $number);
+        }
+
+        return new EnumDescriptorBuilder($fullname, $value_arr);
     }
 }

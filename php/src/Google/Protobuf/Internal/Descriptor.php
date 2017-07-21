@@ -32,32 +32,47 @@
 
 namespace Google\Protobuf\Internal;
 
-class Descriptor
+class Descriptor implements \Google\Protobuf\Descriptor
 {
-
     private $full_name;
-    private $field = [];
-    private $json_to_field = [];
-    private $name_to_field = [];
-    private $nested_type = [];
-    private $enum_type = [];
     private $klass;
+    private $fields;
+    private $number_to_fields;
+    private $json_to_fields;
+    private $name_to_fields;
+    private $nested_types;
+    private $enum_types;
+    private $oneof_decls;
     private $options;
-    private $oneof_decl = [];
 
-    public function addOneofDecl($oneof)
-    {
-        $this->oneof_decl[] = $oneof;
-    }
-
-    public function getOneofDecl()
-    {
-        return $this->oneof_decl;
-    }
-
-    public function setFullName($full_name)
+    public function __construct(
+        $full_name,
+        $klass,
+        $fields,
+        $nested_types,
+        $enum_types,
+        $oneof_decls,
+        $options)
     {
         $this->full_name = $full_name;
+        $this->klass = $klass;
+        $this->fields = $fields;
+        $this->nested_types = $nested_types;
+        $this->enum_types = $enum_types;
+        $this->oneof_decls = $oneof_decls;
+        $this->options = $options;
+
+        $number_to_fields = [];
+        $json_to_fields = [];
+        $name_to_fields = [];
+        foreach ($fields as $field) {
+            $number_to_fields[$field->getNumber()] = $field;
+            $json_to_fields[$field->getJsonName()] = $field;
+            $name_to_fields[$field->getName()] = $field;
+        }
+        $this->number_to_fields = $number_to_fields;
+        $this->json_to_fields = $json_to_fields;
+        $this->name_to_fields = $name_to_fields;
     }
 
     public function getFullName()
@@ -65,78 +80,59 @@ class Descriptor
         return $this->full_name;
     }
 
-    public function addField($field)
-    {
-        $this->field[$field->getNumber()] = $field;
-        $this->json_to_field[$field->getJsonName()] = $field;
-        $this->name_to_field[$field->getName()] = $field;
-    }
-
-    public function getField()
-    {
-        return $this->field;
-    }
-
-    public function addNestedType($desc)
-    {
-        $this->nested_type[] = $desc;
-    }
-
-    public function getNestedType()
-    {
-        return $this->nested_type;
-    }
-
-    public function addEnumType($desc)
-    {
-        $this->enum_type[] = $desc;
-    }
-
-    public function getEnumType()
-    {
-        return $this->enum_type;
-    }
-
-    public function getFieldByNumber($number)
-    {
-        if (!isset($this->field[$number])) {
-          return NULL;
-        } else {
-          return $this->field[$number];
-        }
-    }
-
-    public function getFieldByJsonName($json_name)
-    {
-        if (!isset($this->json_to_field[$json_name])) {
-          return NULL;
-        } else {
-          return $this->json_to_field[$json_name];
-        }
-    }
-
-    public function getFieldByName($name)
-    {
-        if (!isset($this->name_to_field[$name])) {
-          return NULL;
-        } else {
-          return $this->name_to_field[$name];
-        }
-    }
-
-    public function setClass($klass)
-    {
-        $this->klass = $klass;
-    }
-
     public function getClass()
     {
         return $this->klass;
     }
 
-    public function setOptions($options)
+    public function getField($index)
     {
-        $this->options = $options;
+        return $this->fields[$index];
+    }
+
+    public function getFieldCount()
+    {
+        return count($this->fields);
+    }
+
+    public function getNestedType($index)
+    {
+        return $this->nested_types[$index];
+    }
+
+    public function getNestedTypes()
+    {
+        return $this->nested_types;
+    }
+
+    public function getNestedTypeCount()
+    {
+        return count($this->nested_types);
+    }
+
+    public function getEnumType($index)
+    {
+        return $this->enum_types[$index];
+    }
+
+    public function getEnumTypes()
+    {
+        return $this->enum_types;
+    }
+
+    public function getEnumTypeCount()
+    {
+        return count($this->enum_types);
+    }
+
+    public function getOneofDecl($index)
+    {
+        return $this->oneof_decls[$index];
+    }
+
+    public function getOneofDeclCount()
+    {
+        return count($this->oneof_decls);
     }
 
     public function getOptions()
@@ -144,10 +140,45 @@ class Descriptor
         return $this->options;
     }
 
+    public function getFieldByNumber($number)
+    {
+        if (!isset($this->number_to_fields[$number])) {
+            return NULL;
+        } else {
+            return $this->number_to_fields[$number];
+        }
+    }
+
+    public function getFieldByJsonName($json_name)
+    {
+        if (!isset($this->json_to_fields[$json_name])) {
+            return NULL;
+        } else {
+            return $this->json_to_fields[$json_name];
+        }
+    }
+
+    public function getFieldByName($name)
+    {
+        if (!isset($this->name_to_fields[$name])) {
+            return NULL;
+        } else {
+            return $this->name_to_fields[$name];
+        }
+    }
+
+    public function crossLink($pool)
+    {
+        foreach ($this->fields as $field) {
+            $field->crossLink($pool);
+        }
+        foreach ($this->nested_types as $nested_type) {
+            $nested_type->crossLink($pool);
+        }
+    }
+
     public static function buildFromProto($proto, $file_proto, $containing)
     {
-        $desc = new Descriptor();
-
         $message_name_without_package  = "";
         $classname = "";
         $fullname = "";
@@ -158,32 +189,40 @@ class Descriptor
             $message_name_without_package,
             $classname,
             $fullname);
-        $desc->setFullName($fullname);
-        $desc->setClass($classname);
-        $desc->setOptions($proto->getOptions());
 
+        $fields = [];
         foreach ($proto->getField() as $field_proto) {
-            $desc->addField(FieldDescriptor::buildFromProto($field_proto));
+            $fields[] = FieldDescriptor::buildFromProto($field_proto);
         }
 
         // Handle nested types.
+        $nested_types = [];
         foreach ($proto->getNestedType() as $nested_proto) {
-            $desc->addNestedType(Descriptor::buildFromProto(
-              $nested_proto, $file_proto, $message_name_without_package));
+            $nested_types[] = Descriptor::buildFromProto(
+                $nested_proto, $file_proto, $message_name_without_package);
         }
 
         // Handle nested enum.
+        $enums = [];
         foreach ($proto->getEnumType() as $enum_proto) {
-            $desc->addEnumType(EnumDescriptor::buildFromProto(
-              $enum_proto, $file_proto, $message_name_without_package));
+            $enums[] = EnumDescriptor::buildFromProto(
+              $enum_proto, $file_proto, $message_name_without_package);
         }
 
         // Handle oneof fields.
+        $oneofs = [];
         foreach ($proto->getOneofDecl() as $oneof_proto) {
-            $desc->addOneofDecl(
-                OneofDescriptor::buildFromProto($oneof_proto, $desc));
+            $oneofs[] = OneofDescriptor::buildFromProto($oneof_proto);
         }
 
-        return $desc;
+        return new Descriptor(
+            $fullname,
+            $classname,
+            $fields,
+            $nested_types,
+            $enums,
+            $oneofs,
+            $proto->getOptions()
+        );
     }
 }
