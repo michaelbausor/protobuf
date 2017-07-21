@@ -35,63 +35,29 @@ namespace Google\Protobuf\Internal;
 use Google\Protobuf\Internal\EnumDescriptor;
 use Google\Protobuf\Internal\EnumValueDescriptor;
 
-class EnumDescriptorBuilder
+class EnumBuilderContext
 {
-    private $full_name;
-    private $klass;
-    private $values = [];
 
-    public function __construct($full_name, $klass)
-    {
-        $this->full_name = $full_name;
-        $this->klass = $klass;
-    }
+    private $descriptor;
+    private $pool;
 
-    public function getFullName()
+    public function __construct($full_name, $klass, $pool)
     {
-        return $this->full_name;
-    }
-
-    public function getClass()
-    {
-        return $this->klass;
-    }
-
-    public function getValues()
-    {
-        return $this->values;
+        $this->descriptor = new EnumDescriptor();
+        $this->descriptor->setFullName($full_name);
+        $this->descriptor->setClass($klass);
+        $this->pool = $pool;
     }
 
     public function value($name, $number)
     {
-        $this->values[$number] = new EnumValueDescriptor($name, $number);
+        $value = new EnumValueDescriptor();
+        $this->descriptor->addValue($number, $value);
         return $this;
     }
 
-    public function build()
+    public function finalizeToPool()
     {
-        return new EnumDescriptor($this->full_name, $this->klass, $this->values);
-    }
-
-    public static function buildFromProto($proto, $file_proto, $containing)
-    {
-        $enum_name_without_package  = "";
-        $classname = "";
-        $fullname = "";
-        GPBUtil::getFullClassName(
-            $proto,
-            $containing,
-            $file_proto,
-            $enum_name_without_package,
-            $classname,
-            $fullname);
-        $value_arr = [];
-        foreach ($proto->getValue() as $proto_value) {
-            $name = $proto_value->getName();
-            $number = $proto_value->getNumber();
-            $value_arr[$number] = new EnumValueDescriptor($name, $number);
-        }
-
-        return new EnumDescriptorBuilder($fullname, $value_arr);
+        $this->pool->addEnumDescriptor($this->descriptor);
     }
 }
