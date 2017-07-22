@@ -47,6 +47,12 @@ class FieldDescriptor
     private $packed;
     private $is_map;
     private $oneof_index = -1;
+    private $public_desc;
+
+    public function __construct()
+    {
+        $this->public_desc = new \Google\Protobuf\FieldDescriptor($this);
+    }
 
     public function setOneofIndex($index)
     {
@@ -173,6 +179,11 @@ class FieldDescriptor
         return $this->getType() == GPBType::MESSAGE &&
                !is_null($this->getMessageType()->getOptions()) &&
                $this->getMessageType()->getOptions()->getMapEntry();
+    }
+
+    public function getPublicDescriptor()
+    {
+        return $this->public_desc;
     }
 
     private static function isTypePackable($field_type)

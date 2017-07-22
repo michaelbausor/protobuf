@@ -36,47 +36,89 @@ use Google\Protobuf\Internal\GPBLabel;
 use Google\Protobuf\Internal\GPBType;
 use Google\Protobuf\Internal\GPBUtil;
 
-interface FieldDescriptor
+class FieldDescriptor
 {
+    private $internal_desc;
+
+    /**
+     * @internal
+     */
+    public function __construct($internal_desc)
+    {
+        $this->internal_desc = $internal_desc;
+    }
+
     /**
      * @return string Field name
      */
-    public function getName();
+    public function getName()
+    {
+        return $this->internal_desc->getName();
+    }
 
     /**
      * @return int Protobuf field number
      */
-    public function getNumber();
+    public function getNumber()
+    {
+        return $this->internal_desc->getNumber();
+    }
 
     /**
      * @return GPBLabel
      */
-    public function getLabel();
+    public function getLabel()
+    {
+        return $this->internal_desc->getLabel();
+    }
 
     /**
      * @return GPBType
      */
-    public function getType();
+    public function getType()
+    {
+        return $this->internal_desc->getType();
+    }
 
     /**
      * @return Descriptor Returns a descriptor for the field type if getType() == GBPType::Message, otherwise throws \Exception
      * @throws \Exception
      */
-    public function getMessageType();
+    public function getMessageType()
+    {
+        if ($this->getType() == GPBType::MESSAGE) {
+            return $this->internal_desc->getMessageType();
+        } else {
+            throw new \Exception("Cannot get message type for non-message field '" . $this->getName() . "'");
+        }
+    }
 
     /**
      * @return EnumDescriptor Returns an enum descriptor for the field type if getType() == GBPType::Enum, otherwise throws \Exception
      * @throws \Exception
      */
-    public function getEnumType();
+    public function getEnumType()
+    {
+        if ($this->getType() == GPBType::ENUM) {
+            return $this->internal_desc->getEnumType();
+        } else {
+            throw new \Exception("Cannot get enum type for non-enum field '" . $this->getName() . "'");
+        }
+    }
 
     /**
      * @return boolean
      */
-    public function isMap();
+    public function isMap()
+    {
+        return $this->internal_desc->isMap();
+    }
 
     /**
      * @return int Returns the index of the oneof containing this field, or -1 if this field is part of a oneof
      */
-    public function getOneofIndex();
+    public function getOneofIndex()
+    {
+        return $this->internal_desc->getOneofIndex();
+    }
 }

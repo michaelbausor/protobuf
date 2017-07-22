@@ -32,15 +32,33 @@
 
 namespace Google\Protobuf;
 
-interface EnumValueDescriptor
+class EnumValueDescriptor
 {
+    private $name;
+    private $number;
+
+    /**
+     * @internal
+     */
+    public function __construct($name, $number)
+    {
+        $this->name = $name;
+        $this->number = $number;
+    }
+
     /**
      * @return string
      */
-    public function getName();
+    public function getName()
+    {
+        return $this->getName();
+    }
 
     /**
      * @return int
      */
-    public function getNumber();
+    public function getNumber()
+    {
+        return $this->getNumber();
+    }
 }

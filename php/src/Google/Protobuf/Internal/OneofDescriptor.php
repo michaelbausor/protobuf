@@ -37,6 +37,12 @@ class OneofDescriptor
 
     private $name;
     private $fields;
+    private $public_desc;
+
+    public function __construct()
+    {
+        $this->public_desc = new \Google\Protobuf\OneofDescriptor($this);
+    }
 
     public function setName($name)
     {
@@ -56,6 +62,11 @@ class OneofDescriptor
     public function getFields()
     {
         return $this->fields;
+    }
+
+    public function getPublicDescriptor()
+    {
+        return $this->public_desc;
     }
 
     public static function buildFromProto($oneof_proto)

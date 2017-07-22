@@ -32,59 +32,99 @@
 
 namespace Google\Protobuf;
 
-interface Descriptor
+class Descriptor
 {
+    private $internal_desc;
+
+    /**
+     * @internal
+     */
+    public function __construct($internal_desc)
+    {
+        $this->internal_desc = $internal_desc;
+    }
+
     /**
      * @return string Full protobuf message name
      */
-    public function getFullName();
+    public function getFullName()
+    {
+        return $this->internal_desc->getFullName();
+    }
 
     /**
      * @return string PHP class name
      */
-    public function getClass();
+    public function getClass()
+    {
+        return $this->internal_desc->getClass();
+    }
 
     /**
      * @param int $index Must be >= 0 and < getFieldCount()
      * @return FieldDescriptor
      */
-    public function getField($index);
+    public function getField($index)
+    {
+        return $this->internal_desc->getFieldByIndex($index);
+    }
 
     /**
      * @return int Number of fields in message
      */
-    public function getFieldCount();
+    public function getFieldCount()
+    {
+        return count($this->internal_desc->getField());
+    }
 
     /**
      * @param int $index Must be >= 0 and < getNestedTypeCount()
      * @return Descriptor
      */
-    public function getNestedType($index);
+    public function getNestedType($index)
+    {
+        return $this->internal_desc->getNestedType()[$index];
+    }
 
     /**
      * @return int Number of nested types in message
      */
-    public function getNestedTypeCount();
+    public function getNestedTypeCount()
+    {
+        return count($this->internal_desc->getNestedType());
+    }
 
     /**
      * @param int $index Must be >= 0 and < getEnumTypeCount()
      * @return EnumDescriptor
      */
-    public function getEnumType($index);
+    public function getEnumType($index)
+    {
+        return $this->internal_desc->getEnumType()[$index];
+    }
 
     /**
      * @return int Number of enum types in message
      */
-    public function getEnumTypeCount();
+    public function getEnumTypeCount()
+    {
+        return count($this->internal_desc->getEnumType());
+    }
 
     /**
      * @param int $index Must be >= 0 and < getOneofDeclCount()
      * @return OneofDescriptor
      */
-    public function getOneofDecl($index);
+    public function getOneofDecl($index)
+    {
+        return $this->internal_desc->getOneofDecl()[$index];
+    }
 
     /**
      * @return int Number of oneofs in message
      */
-    public function getOneofDeclCount();
+    public function getOneofDeclCount()
+    {
+        return count($this->internal_desc->getOneofDecl());
+    }
 }

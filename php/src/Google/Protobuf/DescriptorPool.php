@@ -30,30 +30,45 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-namespace Google\Protobuf\Internal;
+namespace Google\Protobuf;
 
-class EnumValueDescriptor
+class DescriptorPool
 {
-    private $name;
-    private $number;
+    private static $pool;
 
-    public function setName($name)
+    private $internal_pool;
+
+    /**
+     * @return DescriptorPool
+     */
+    public static function getGeneratedPool()
     {
-        $this->name = $name;
+        if (!isset(self::$pool)) {
+            self::$pool = new DescriptorPool(\Google\Protobuf\Internal\DescriptorPool::getGeneratedPool());
+        }
+        return self::$pool;
     }
 
-    public function getName()
+    private function __construct($internal_pool)
     {
-        return $this->name;
+        $this->internal_pool = $internal_pool;
     }
 
-    public function setNumber($number)
+    /**
+     * @param string $className A fully qualified protobuf class name
+     * @return Descriptor
+     */
+    public function getDescriptorByClassName($className)
     {
-        $this->number = $number;
+        return $this->internal_pool->getDescriptorByClassName($className)->getPublicDescriptor();
     }
 
-    public function getNumber()
+    /**
+     * @param string $className A fully qualified protobuf class name
+     * @return EnumDescriptor
+     */
+    public function getEnumDescriptorByClassName($className)
     {
-        return $this->number;
+        return $this->internal_pool->getEnumDescriptorByClassName($className)->getPublicDescriptor();
     }
 }
