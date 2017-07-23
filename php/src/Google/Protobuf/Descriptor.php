@@ -66,7 +66,7 @@ class Descriptor
      */
     public function getField($index)
     {
-        return $this->internal_desc->getFieldByIndex($index);
+        return $this->getPublicDescriptor($this->internal_desc->getFieldByIndex($index));
     }
 
     /**
@@ -83,7 +83,7 @@ class Descriptor
      */
     public function getNestedType($index)
     {
-        return $this->internal_desc->getNestedType()[$index];
+        return $this->getPublicDescriptor($this->internal_desc->getNestedType()[$index]);
     }
 
     /**
@@ -100,7 +100,7 @@ class Descriptor
      */
     public function getEnumType($index)
     {
-        return $this->internal_desc->getEnumType()[$index];
+        return $this->getPublicDescriptor($this->internal_desc->getEnumType()[$index]);
     }
 
     /**
@@ -117,7 +117,7 @@ class Descriptor
      */
     public function getOneofDecl($index)
     {
-        return $this->internal_desc->getOneofDecl()[$index];
+        return $this->getPublicDescriptor($this->internal_desc->getOneofDecl()[$index]);
     }
 
     /**
@@ -126,5 +126,10 @@ class Descriptor
     public function getOneofDeclCount()
     {
         return count($this->internal_desc->getOneofDecl());
+    }
+
+    private function getPublicDescriptor($desc)
+    {
+        return is_null($desc) ? null : $desc->getPublicDescriptor();
     }
 }

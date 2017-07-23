@@ -69,10 +69,15 @@ class OneofDescriptor
         return $this->public_desc;
     }
 
-    public static function buildFromProto($oneof_proto)
+    public static function buildFromProto($oneof_proto, $desc, $index)
     {
         $oneof = new OneofDescriptor();
         $oneof->setName($oneof_proto->getName());
+        foreach ($desc->getField() as $field) {
+            if ($field->getOneofIndex() == $index) {
+                $oneof->addField($field);
+            }
+        }
         return $oneof;
     }
 }

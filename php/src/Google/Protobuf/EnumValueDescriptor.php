@@ -51,7 +51,7 @@ class EnumValueDescriptor
      */
     public function getName()
     {
-        return $this->getName();
+        return $this->name;
     }
 
     /**
@@ -59,6 +59,6 @@ class EnumValueDescriptor
      */
     public function getNumber()
     {
-        return $this->getNumber();
+        return $this->number;
     }
 }

@@ -2,6 +2,8 @@
 
 namespace Google\Protobuf\Internal;
 
+use Google\Protobuf\EnumValueDescriptor;
+
 class EnumDescriptor
 {
 

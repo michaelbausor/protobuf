@@ -58,7 +58,7 @@ class OneofDescriptor
      */
     public function getField($index)
     {
-        return $this->internal_desc->getFields()[$index];
+        return $this->getPublicDescriptor($this->internal_desc->getFields()[$index]);
     }
 
     /**
@@ -67,5 +67,10 @@ class OneofDescriptor
     public function getFieldCount()
     {
         return count($this->internal_desc->getFields());
+    }
+
+    private function getPublicDescriptor($desc)
+    {
+        return is_null($desc) ? null : $desc->getPublicDescriptor();
     }
 }

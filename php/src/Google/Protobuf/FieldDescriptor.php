@@ -87,7 +87,7 @@ class FieldDescriptor
     public function getMessageType()
     {
         if ($this->getType() == GPBType::MESSAGE) {
-            return $this->internal_desc->getMessageType();
+            return $this->getPublicDescriptor($this->internal_desc->getMessageType());
         } else {
             throw new \Exception("Cannot get message type for non-message field '" . $this->getName() . "'");
         }
@@ -100,7 +100,7 @@ class FieldDescriptor
     public function getEnumType()
     {
         if ($this->getType() == GPBType::ENUM) {
-            return $this->internal_desc->getEnumType();
+            return $this->getPublicDescriptor($this->internal_desc->getEnumType());
         } else {
             throw new \Exception("Cannot get enum type for non-enum field '" . $this->getName() . "'");
         }
@@ -120,5 +120,10 @@ class FieldDescriptor
     public function getOneofIndex()
     {
         return $this->internal_desc->getOneofIndex();
+    }
+
+    private function getPublicDescriptor($desc)
+    {
+        return is_null($desc) ? null : $desc->getPublicDescriptor();
     }
 }

@@ -60,7 +60,8 @@ class DescriptorPool
      */
     public function getDescriptorByClassName($className)
     {
-        return $this->internal_pool->getDescriptorByClassName($className)->getPublicDescriptor();
+        $desc = $this->internal_pool->getDescriptorByClassName($className);
+        return is_null($desc) ? null : $desc->getPublicDescriptor();
     }
 
     /**
@@ -69,6 +70,7 @@ class DescriptorPool
      */
     public function getEnumDescriptorByClassName($className)
     {
-        return $this->internal_pool->getEnumDescriptorByClassName($className)->getPublicDescriptor();
+        $desc = $this->internal_pool->getEnumDescriptorByClassName($className);
+        return is_null($desc) ? null : $desc->getPublicDescriptor();
     }
 }

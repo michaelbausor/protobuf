@@ -201,9 +201,11 @@ class Descriptor
         }
 
         // Handle oneof fields.
+        $index = 0;
         foreach ($proto->getOneofDecl() as $oneof_proto) {
             $desc->addOneofDecl(
-                OneofDescriptor::buildFromProto($oneof_proto, $desc));
+                OneofDescriptor::buildFromProto($oneof_proto, $desc, $index));
+            $index++;
         }
 
         return $desc;
